@@ -7,9 +7,15 @@
   "finds the centroid u that is closest to x and returns u's index"
   (first (apply min-key second (map-indexed vector (map (partial utils/sqr-euclid-dist x) U)))))
 
+(defn centroid-update [X cluster]
+  (if (= (count cluster) 0)
+    (rand-nth X)
+    (utils/average (utils/get-x-values X cluster))))
+
 (defn kmeans
   ([X k start end]
-   (kmeans X (for [i (range k)] (utils/rand-from-range start end))))
+   ;(kmeans X (for [i (range k)] (utils/rand-from-range start end))))
+   (kmeans X (for [i (range k)] (rand-nth X))))
   ([X U]
    (let [clusters
          (loop [i 0 clusters (vec (replicate (count U) []))]
@@ -19,20 +25,24 @@
                (recur
                  (inc i)
                  (assoc clusters u-index (conj (nth clusters u-index) i))))))
-         new-U (map (fn [cluster] (utils/average (map #(nth X %) cluster))) clusters)]
+         new-U (map (partial centroid-update X) clusters)]
      (if (= U new-U)
        [clusters new-U]
        (kmeans X new-U)))))
 
-(defn F [U weights vars x]
-  (+ (reduce + (map #(* %1 (utils/gaussian %2 %3 x)) (rest weights) U vars)) (first weights)))
+(defn F [U weights vars outputs? x]
+  (let [outputs (apply conj (vector (first weights)) (map #(* %1 (utils/gaussian %2 %3 x)) (rest weights) U vars))
+        y (reduce + outputs)]
+    (if outputs?
+      [y outputs]
+      y)))
 
-(defn weight-update [d y eta w u]
-  (+ w (* eta (- d y) u)))
+(defn weight-update [d y eta w x]
+  (+ w (* eta (- d y) x)))
 
-(defn rbf-approx [X Y clusters U vars eta]
+(defn rbf-weights [X Y clusters U vars eta]
   "train an rbf network and return the weights after 100 epochs"
-  (loop [i 0 weights (vec (replicate (+ (count U) 1) 0.0))]
+  (loop [i 0 weights (vec (replicate (+ (count U) 1) 1.0))]
     (if (= 100 i)
       weights
       (recur
@@ -40,19 +50,30 @@
         (loop [j 0 weights weights]
           (if (= (count X) j)
             weights
-            (let [x (nth X j) d (nth Y j) y (F U weights vars x)]
-              (recur (inc j) (map (partial weight-update d y eta) weights (into [1] U))))))))))
+            (let [x (nth X j) d (nth Y j) [y outputs] (F U weights vars true x)]
+              (recur (inc j) (map (partial weight-update d y eta) weights outputs)))))))))
+
+(defn train [data k eta start end]
+  (let [X (map first data)
+        Y (map second data)
+        [clusters U] (kmeans X k start end)
+        vars (utils/variances (map (partial utils/get-x-values X) clusters) U)]
+    [clusters U vars (rbf-weights X Y clusters U vars eta)]))
 
 (defn -main
-  "I don't do a whole lot ... yet."
+  "generate data if it has not yet been created"
   [& args]
   (if-not (.exists (io/as-file "data.txt"))
     (generator/generate-data utils/h 75))
   (let [data (utils/process-data "data.txt")
+        k 3
+        start 0
+        end 1
+        eta 0.01
         X (map first data)
         Y (map second data)
-        [clusters U] (kmeans X 3 0 1)
+        [clusters U] (kmeans X k start end)
         vars (utils/variances (map (partial utils/get-x-values X) clusters) U)
-        weights (rbf-approx X Y clusters U vars 0.01)]
-    (print (print-str clusters \newline U \newline vars \newline weights))))
+        weights (rbf-weights X Y clusters U vars eta)]
+    (print-str weights)))
 
