@@ -14,7 +14,6 @@
 
 (defn kmeans
   ([X k start end]
-   ;(kmeans X (for [i (range k)] (utils/rand-from-range start end))))
    (kmeans X (for [i (range k)] (rand-nth X))))
   ([X U]
    (let [clusters
@@ -64,16 +63,5 @@
   "generate data if it has not yet been created"
   [& args]
   (if-not (.exists (io/as-file "data.txt"))
-    (generator/generate-data utils/h 75))
-  (let [data (utils/process-data "data.txt")
-        k 3
-        start 0
-        end 1
-        eta 0.01
-        X (map first data)
-        Y (map second data)
-        [clusters U] (kmeans X k start end)
-        vars (utils/variances (map (partial utils/get-x-values X) clusters) U)
-        weights (rbf-weights X Y clusters U vars eta)]
-    (print-str weights)))
+    (generator/generate-data utils/h 75)))
 

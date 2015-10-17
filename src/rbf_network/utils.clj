@@ -19,28 +19,24 @@
   "compute the squared euclidean distance for scalar inputs"
   (square (- x u)))
 
+(defn magnitude [X]
+  (math/sqrt (reduce + (map #(math/expt % 2) X))))
+
 (defn rand-from-range [start end]
   (+ start (rand (- end start))))
 
 (defn variance [[X u]]
   (if (= (count X) 1)
     0
-    (* (/ 1.0 (count X)) (reduce + (map (partial sqr-euclid-dist u) X)))))
+    (* (/ 1.0 (magnitude X)) (reduce + (map (partial sqr-euclid-dist u) X)))))
 
 (defn variances [clusters U]
   (let [vars (mapv variance (map vector clusters U))
-        num-zero (count (filter #(= % 0) vars))
+        num-zero (count (filter #(== % 0) vars))
         mean-var (/ (reduce + vars) (- (count vars) num-zero))]
     (if (= num-zero 0)
       vars
-      (loop [i 0 vars vars]
-        (if (= (count vars) i)
-          vars
-          (recur
-            (inc i)
-            (if (= (nth vars i) 0)
-              (assoc vars i mean-var)
-              vars)))))))
+      (map #(if (== % 0) mean-var %) vars))))
 
 (defn get-x-values [X cluster]
   (map #(nth X %) cluster))
