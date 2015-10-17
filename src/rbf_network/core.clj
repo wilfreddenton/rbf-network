@@ -8,11 +8,13 @@
   (first (apply min-key second (map-indexed vector (map (partial utils/sqr-euclid-dist x) U)))))
 
 (defn centroid-update [X cluster]
+  "update the centroid to the average of the x values."
   (if (= (count cluster) 0)
     (rand-nth X)
     (utils/average (utils/get-x-values X cluster))))
 
 (defn kmeans
+  "performs k means clustering on a set of scalar values"
   ([X k start end]
    (kmeans X (for [i (range k)] (rand-nth X))))
   ([X U]
@@ -30,6 +32,9 @@
        (kmeans X new-U)))))
 
 (defn F [U weights vars outputs? x]
+  "computes the output of the rbf network. it needs the centroids, weights, variances
+  of each cluster, a boolean to determine whether or not to return the individual
+  outputs of each basis function along with the output of the network."
   (let [outputs (apply conj (vector (first weights)) (map #(* %1 (utils/gaussian %2 %3 x)) (rest weights) U vars))
         y (reduce + outputs)]
     (if outputs?
@@ -37,6 +42,7 @@
       y)))
 
 (defn weight-update [d y eta w x]
+  "update rule for single layer perceptron"
   (+ w (* eta (- d y) x)))
 
 (defn rbf-weights [X Y clusters U vars eta]
@@ -53,6 +59,9 @@
               (recur (inc j) (map (partial weight-update d y eta) weights outputs)))))))))
 
 (defn train [data k eta start end]
+  "collects all the data needed to train the rbf network and then initalizes
+  the training. it returns the clusters, centroids, variances of the clusters, and
+  the trained weights"
   (let [X (map first data)
         Y (map second data)
         [clusters U] (kmeans X k start end)

@@ -1,13 +1,11 @@
 ;; gorilla-repl.fileformat = 1
 
 ;; **
-;;; # Gorilla REPL
+;;; # Radial Basis Function Neural Network
 ;;; 
-;;; Welcome to gorilla :-)
+;;; $$ f(x) = 0.5 + 0.4sin(2\pi x) $$
 ;;; 
-;;; Shift + enter evaluates code. Hit ctrl+g twice in quick succession or click the menu icon (upper-right corner) for more commands ...
-;;; 
-;;; It's a good habit to run each worksheet in its own namespace: feel free to use the declaration we've provided below if you'd like.
+;;; $$ F(x) = \sum_{j=0}^M w_j x^j $$
 ;; **
 
 ;; @@
