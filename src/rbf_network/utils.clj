@@ -1,6 +1,7 @@
 (ns rbf-network.utils
   (:require [clojure.math.numeric-tower :as math]
-            [clojure.zip :as zip])
+            [clojure.zip :as zip]
+            [clojure.math.combinatorics :as combo])
   (:use [clojure.string :only [split split-lines trim]]))
 
 (defn- square [n]
@@ -25,7 +26,7 @@
 
 (defn magnitude [X]
   "compute the magnitude of a vector X"
-  (math/sqrt (reduce + (map #(math/expt % 2) X))))
+  (math/sqrt (reduce + (map square X))))
 
 (defn rand-from-range [start end]
   "return a random value from the specified range"
@@ -37,14 +38,19 @@
     0
     (* (/ 1.0 (magnitude X)) (reduce + (map (partial sqr-euclid-dist u) X)))))
 
-(defn variances [clusters U]
-  "compute the variances of the clusters"
-  (let [vars (mapv variance (map vector clusters U))
-        num-zero (count (filter #(== % 0) vars))
-        mean-var (/ (reduce + vars) (- (count vars) num-zero))]
-    (if (= num-zero 0)
-      vars
-      (map #(if (== % 0) mean-var %) vars))))
+(defn variances [clusters U same?]
+  "compute the variances of the clusters. if same? is true then all the variances
+  will be the same"
+  (if same?
+    (let [d-max (apply max (map #(math/abs (reduce - %)) (combo/combinations U 2)))
+          denom (math/sqrt (* 2 (count U)))]
+      (repeat (count U) (square (/ d-max denom))))
+    (let [vars (mapv variance (map vector clusters U))
+          num-zero (count (filter #(== % 0) vars))
+          mean-var (/ (reduce + vars) (- (count vars) num-zero))]
+      (if (= num-zero 0)
+        vars
+        (map #(if (== % 0) mean-var %) vars)))))
 
 (defn get-x-values [X cluster]
   "retrieve the x values in the cluster"

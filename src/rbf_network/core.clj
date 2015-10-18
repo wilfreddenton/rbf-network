@@ -19,7 +19,7 @@
    (kmeans X (for [i (range k)] (rand-nth X))))
   ([X U]
    (let [clusters
-         (loop [i 0 clusters (vec (replicate (count U) []))]
+         (loop [i 0 clusters (vec (repeat (count U) []))]
            (if (= (count X) i)
              clusters
              (let [x (nth X i) u-index (closest-centroid x U)]
@@ -47,7 +47,7 @@
 
 (defn rbf-weights [X Y clusters U vars eta]
   "train an rbf network and return the weights after 100 epochs"
-  (loop [i 0 weights (vec (replicate (+ (count U) 1) 1.0))]
+  (loop [i 0 weights (vec (repeat (+ (count U) 1) 1.0))]
     (if (= 100 i)
       weights
       (recur
@@ -58,14 +58,14 @@
             (let [x (nth X j) d (nth Y j) [y outputs] (F U weights vars true x)]
               (recur (inc j) (map (partial weight-update d y eta) weights outputs)))))))))
 
-(defn train [data k eta start end]
+(defn train [data k eta start end same-vars?]
   "collects all the data needed to train the rbf network and then initalizes
   the training. it returns the clusters, centroids, variances of the clusters, and
   the trained weights"
   (let [X (map first data)
         Y (map second data)
         [clusters U] (kmeans X k start end)
-        vars (utils/variances (map (partial utils/get-x-values X) clusters) U)]
+        vars (utils/variances (map (partial utils/get-x-values X) clusters) U same-vars?)]
     [clusters U vars (rbf-weights X Y clusters U vars eta)]))
 
 (defn -main
